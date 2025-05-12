@@ -63,17 +63,19 @@ mensagem_y       = y_positions[4]
 # destino horizontal (ao lado do PC direito)
 destino_x = 650 - (30 + 40)
 
-# waypoints: (x,y,color) para captura de camadas, depois atravessar e soltar
 waypoints = [
     # ---------- DESCIDA  (PC esquerdo) ----------
-    (mensagem_start_x, y_positions[4], VERDE   ,"Camada de Aplicação: dados da aplicação"),
+    (mensagem_start_x, y_positions[4], VERDE    , "Camada de Aplicação: dados da aplicação"),
     (mensagem_start_x, y_positions[3], AZUL    , "Camada Transporte: cabeçalho TCP/UDP"),
     (mensagem_start_x, y_positions[2], AMARELO , "Camada Rede: cabeçalho IP"),
     (mensagem_start_x, y_positions[1], VERMELHO, "Camada Enlace: cabeçalho Ethernet"),
     (mensagem_start_x, y_positions[0], MAGENTA , "Camada Física: sinais elétricos"),
 
     # ---------- TRAVESSIA ----------
-    (destino_x       , y_positions[0], None    , "Enviando pela rede…"),
+    # (1) ponto de partida – mostra a mensagem ENVIANDO e já começa a mover
+    (mensagem_start_x, y_positions[0], None    , "Enviando pela rede…"),
+    # (2) ponto de chegada na frente do PC direito – muda para RECEBENDO
+    (destino_x       , y_positions[0], None    , "Recebendo na Física: conversão de sinais"),
 
     # ---------- SUBIDA  (PC direito) ----------
     (destino_x       , y_positions[1], None , "Desencaps. Enlace: remove Ethernet"),
@@ -81,7 +83,6 @@ waypoints = [
     (destino_x       , y_positions[3], None , "Desencaps. Transp: remove TCP"),
     (destino_x       , y_positions[4], None , "Aplicação destino: mensagem recebida!")
 ]
-
 waypoint_idx = 0
 # lista de cores adquiridas, iniciando com Aplicação (verde)
 acquired_colors = [VERDE]
