@@ -517,8 +517,14 @@ class Application:
 # ----------------------- Função main ----------------------- #
 def main():
     app = Application()
-    if app.init(): app.run()
+    try:
+        if app.init():
+            app.run()          # run() já encerra o GLFW no finally
+    except KeyboardInterrupt:
+        print("\nInterrompido pelo usuário.")   # sai silenciosamente
     return 0
+
+
 
 if __name__ == "__main__":
     sys.exit(main())
