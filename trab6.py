@@ -60,12 +60,15 @@ mensagem_start_x = 150 + 30 + 40
 mensagem_x       = mensagem_start_x
 mensagem_y       = y_positions[4]
 
+mensagem_angulo = 0.0          # graus
+velocidade_rot  = 5.0          # graus por frame
+
 # destino horizontal (ao lado do PC direito)
 destino_x = 650 - (30 + 40)
 
 waypoints = [
     # ---------- DESCIDA  (PC esquerdo) ----------
-    (mensagem_start_x, y_positions[4], VERDE    , "Camada de Aplicação: dados da aplicação"),
+    (mensagem_start_x, y_positions[4], VERDE    , "Camada de Aplicação: Dados da aplicação(Mensagem Original)"),
     (mensagem_start_x, y_positions[3], AZUL    , "Camada Transporte: cabeçalho TCP/UDP"),
     (mensagem_start_x, y_positions[2], AMARELO , "Camada Rede: cabeçalho IP"),
     (mensagem_start_x, y_positions[1], VERMELHO, "Camada Enlace: cabeçalho Ethernet"),
@@ -84,7 +87,7 @@ waypoints = [
     (destino_x       , y_positions[4], None , "Aplicação destino: mensagem recebida!")
 ]
 waypoint_idx = 0
-# lista de cores adquiridas, iniciando com Aplicação (verde)
+IDX_SUBIDA = 7
 acquired_colors = [VERDE]
 # track origem do segmento atual
 segment_start_x = mensagem_x
@@ -225,6 +228,27 @@ class Renderer:
         glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
         glBindVertexArray(0)
 
+    def _draw_rot(self, vao, count, x, y, scale, rot_deg, cor):
+        glUseProgram(self.color_shader)
+        model = np.identity(4, dtype=np.float32)
+        rad = math.radians(rot_deg)
+        c, s = math.cos(rad), math.sin(rad)
+        model[0,0] =  c*scale
+        model[0,1] = -s*scale
+        model[1,0] =  s*scale
+        model[1,1] =  c*scale
+        model[3,0] =  x
+        model[3,1] =  y
+        glUniformMatrix4fv(
+            glGetUniformLocation(self.color_shader, "model"),
+            1, GL_FALSE, model)
+        glUniform4fv(
+            glGetUniformLocation(self.color_shader, "color"),
+            1, cor)
+        glBindVertexArray(vao)
+        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, None)
+        glBindVertexArray(0)
+
     # desenho de retângulo
     def desenha_quad(self, x, y, w, h, cor):
         self._draw(self.quad_vao, 6, x, y, w, h, cor)
@@ -252,7 +276,7 @@ class Renderer:
                 cor = layer_color
             else:
                 cor = np.array([layer_color[0], layer_color[1], layer_color[2], 0.0], dtype=np.float32)
-            self._draw(self.hexagon_vao, 18, x, y, tamanho, tamanho, cor)
+            self._draw_rot(self.hexagon_vao, 18, x, y, tamanho, rot, cor)
 
     def desenha_pc(self, x, y, scale=1.0, ativo=False):
         """
@@ -274,6 +298,9 @@ class Renderer:
             cx = x
             cy = -50 + y + i*(alt_faixa + gap_s)
             self.desenha_quad(cx, cy, largura, alt_faixa, cor)
+
+    
+
 
     # texto (igual antes)
     def escreve_texto(self, x, y, texto, cor=(0,0,0)):
@@ -314,6 +341,28 @@ class Renderer:
 # ============================================================ #
 #                         Aplicação                           #
 # ============================================================ #
+
+
+# --------------- coloque antes da classe Application ---------------
+def reset_estado():
+    global estadoAtual, progressoAnimacao, waypoint_idx
+    global mensagem_x, mensagem_y, segment_start_x, segment_start_y
+    global acquired_colors, mensagem_angulo, current_msg
+
+    estadoAtual        = ESTADOS["IDLE"]
+    progressoAnimacao  = 0.0
+    waypoint_idx       = 0
+
+    mensagem_x         = mensagem_start_x
+    mensagem_y         = y_positions[4]
+    segment_start_x    = mensagem_x
+    segment_start_y    = mensagem_y
+
+    acquired_colors    = [VERDE]
+    mensagem_angulo    = 0.0
+    current_msg        = ""
+# -------------------------------------------------------------------
+
 class Application:
     def __init__(self): self.renderer=None
 
@@ -349,7 +398,8 @@ class Application:
 
     # ------------- Atualiza lógica/estados ----------- #
     def update(self):
-        global estadoAtual, progressoAnimacao
+        color = None
+        global estadoAtual, progressoAnimacao, mensagem_angulo
         global mensagem_x, mensagem_y, waypoint_idx, segment_start_x, segment_start_y, acquired_colors, current_msg
 
         if ESTADOS["APLICACAO"] <= estadoAtual <= ESTADOS["FISICA"]:
@@ -362,35 +412,40 @@ class Application:
                     segment_start_y = mensagem_y
 
         elif estadoAtual == ESTADOS["MOVE"]:
-        # ---------------- MOVIMENTAÇÃO ENTRE WAYPOINTS ---------------- #
+            # -------------------------------------------------
+            # 1. mover enquanto NAO chegou
+            # -------------------------------------------------
             if waypoint_idx < len(waypoints):
-                tx, ty, color, msg = waypoints[waypoint_idx]     # destino atual
+                tx, ty, color, msg = waypoints[waypoint_idx]
                 progressoAnimacao += velocidadeAnimacao
                 mensagem_x = segment_start_x + (tx - segment_start_x) * progressoAnimacao
                 mensagem_y = segment_start_y + (ty - segment_start_y) * progressoAnimacao
 
-            # Chegou ao waypoint ------------------------------------------------
+                # rotação só durante o trecho horizontal
+                if segment_start_y == y_positions[0] and ty == y_positions[0] \
+                and segment_start_x != tx:
+                    mensagem_angulo = (mensagem_angulo + velocidade_rot) % 360
+                else:
+                    mensagem_angulo = 0.0
+
+            # -------------------------------------------------
             if progressoAnimacao >= 1.0:
                 progressoAnimacao = 0.0
-                global current_msg
-                current_msg = msg
+                current_msg = msg            # <-- OK, color existe aqui
 
                 if color is not None:
-                    # Descendo no PC esquerdo  →  GANHA camada (append)
                     acquired_colors.append(color)
-                else:
-                    # Subindo no PC direito   →  PERDE camada (pop)
-                    if acquired_colors:
+                else:                        # color é None
+                    if tx == destino_x and acquired_colors:
                         acquired_colors.pop()
 
-                # Próximo segmento
+                # actualiza para o próximo segmento
                 waypoint_idx += 1
-                segment_start_x = mensagem_x
-                segment_start_y = mensagem_y
+                segment_start_x, segment_start_y = mensagem_x, mensagem_y
 
-                # Terminou todos os waypoints → começa desencapsulamento
                 if waypoint_idx == len(waypoints):
                     estadoAtual = ESTADOS["DFISICA"]
+
 
         elif ESTADOS["DFISICA"] <= estadoAtual <= ESTADOS["DTRANSPORTE"]:
             progressoAnimacao += velocidadeAnimacao
@@ -398,8 +453,9 @@ class Application:
                 progressoAnimacao = 0.0
 
             # ---------- remove o anel mais externo ----------
-            if acquired_colors:           # só se houver algo a tirar
-                acquired_colors.pop()      # último da lista = borda externa
+            if color is None and segment_start_x == destino_x:    # já estamos no PC direito
+                if acquired_colors:               # ainda há algo a remover
+                    acquired_colors.pop()     # último da lista = borda externa
             # -------------------------------------------------
 
                 estadoAtual += 1
@@ -421,7 +477,7 @@ class Application:
         self.renderer.desenha_pc(650, 300, 1.0, ativo_dir)
 
         if estadoAtual == ESTADOS["MOVE"]:
-            self.renderer.desenha_mensagem(mensagem_x, mensagem_y, acquired_colors)
+            self.renderer.desenha_mensagem(mensagem_x, mensagem_y, acquired_colors, rot=mensagem_angulo)
         if current_msg:
             self.renderer.escreve_texto(80, 550, current_msg)
         else:
@@ -434,7 +490,7 @@ class Application:
                 return []
 
             if estadoAtual != ESTADOS["IDLE"]:
-               self.renderer.desenha_mensagem(mensagem_x, mensagem_y, VERDE)
+               self.renderer.desenha_mensagem(mensagem_x, mensagem_y, [VERDE])
                 # textos por estado (bloco original)
            
             elif estadoAtual == ESTADOS["IDLE"]:
@@ -444,7 +500,8 @@ class Application:
     # ---------------- Callback de teclado ------------- #
     def key_callback(self, window, key, scancode, action, mods):
         global estadoAtual, progressoAnimacao, mensagem_x, mensagem_y, waypoint_idx, acquired_colors
-        if action != glfw.PRESS: return
+        if action != glfw.PRESS: 
+            return
         if key == glfw.KEY_SPACE and estadoAtual == ESTADOS["IDLE"]:
             estadoAtual = ESTADOS["APLICACAO"]
             progressoAnimacao = 0.0
@@ -453,12 +510,7 @@ class Application:
             waypoint_idx = 0
             acquired_colors = [VERDE]
         elif key == glfw.KEY_R:
-            estadoAtual = ESTADOS["IDLE"]
-            progressoAnimacao = 0.0
-            mensagem_x = mensagem_start_x
-            mensagem_y = y_positions[4]
-            waypoint_idx = 0
-            acquired_colors = [VERDE]
+            reset_estado() 
         elif key == glfw.KEY_ESCAPE:
             glfw.set_window_should_close(window, True)
 
