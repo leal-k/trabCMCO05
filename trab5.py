@@ -44,7 +44,7 @@ ESTADOS = {
 # ---------------- Variáveis globais ---------------- #
 estadoAtual        = ESTADOS["IDLE"]     # estado inicial
 progressoAnimacao  = 0.0                 # 0–1 dentro do estado
-velocidadeAnimacao = 0.002               # quanto avança por frame
+velocidadeAnimacao = 0.01               # quanto avança por frame
 mensagem_x         = 150                 # posição x do “pacote”
 mensagem_y         = 200                 # posição y fixo
 destino_x          = 650                 # x sobre PC direito
@@ -251,7 +251,8 @@ class Renderer:
         from PIL import Image, ImageDraw, ImageFont
 
         font_size = 24
-        font = ImageFont.truetype("arial.ttf", font_size)
+        # font = ImageFont.truetype("arial.ttf", font_size)
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
         bbox = font.getbbox(texto)
         text_size = (bbox[2], bbox[3])
 
@@ -421,6 +422,7 @@ class Application:
 
             if estadoAtual == ESTADOS["APLICACAO"]:
                 self.renderer.escreve_texto(80, 550, "Camada de Aplicacao: Mensagem original")
+                self.renderer.escreve_texto(101, 390, "Oi!", (0, 0, 0))
             elif estadoAtual == ESTADOS["TRANSPORTE"]:
                 self.renderer.escreve_texto(80, 550, "Camada de Transporte: Cabecalho TCP/UDP")
             elif estadoAtual == ESTADOS["REDE"]:
@@ -437,6 +439,7 @@ class Application:
                 self.renderer.escreve_texto(80, 550, "Desencapsulando Rede: Retira IP")
             elif estadoAtual == ESTADOS["DTRANSPORTE"]:
                 self.renderer.escreve_texto(80, 550, "Desencapsulando Transporte: Retira TCP")
+                self.renderer.escreve_texto(601, 390, "Oi!", (0, 0, 0))
             elif estadoAtual == ESTADOS["DONE"]:
                 self.renderer.escreve_texto(80, 550, "Mensagem recebida! Aplicacao finaliza")
         else:
