@@ -5,8 +5,7 @@ import OpenGL.GL.shaders as shaders
 import math
 import sys
 import ctypes
-import pygame
-from pygame import freetype
+from PIL import Image, ImageDraw, ImageFont
 
 # -------------------------- Janela -------------------------- #
 WINDOW_WIDTH = 800
@@ -308,7 +307,6 @@ class Renderer:
 
     # texto (igual antes)
     def escreve_texto(self, x, y, texto, cor=(0, 0, 0)):
-        from PIL import Image, ImageDraw, ImageFont
         font = ImageFont.truetype("arial.ttf", 24)
         bbox = font.getbbox(texto)
         img = Image.new("RGBA", (bbox[2], bbox[3]), (0, 0, 0, 0))
