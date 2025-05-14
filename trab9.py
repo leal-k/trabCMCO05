@@ -20,7 +20,7 @@ AMARELO = np.array([1.0, 1.0, 0.0, 1.0], dtype=np.float32)  # Rede
 VERMELHO = np.array([1.0, 0.0, 0.0, 1.0], dtype=np.float32)  # Enlace
 MAGENTA = np.array([1.0, 0.0, 1.0, 1.0], dtype=np.float32)  # Física
 
-# cores da pilha (de baixo p/ cima: Física → Aplicação)
+# cores da pilha (Física → Aplicação)
 LAYERS_COLORS = [MAGENTA, VERMELHO, AMARELO, AZUL, VERDE]
 
 # ------------------- Estados da animação -------------------- #
@@ -257,11 +257,7 @@ class Renderer:
     # desenho de retângulo
     def desenha_quad(self, x, y, w, h, cor):
         self._draw(self.quad_vao, 6, x, y, w, h, cor)
-
-        # desenho de hexágono com bordas concêntricas de cores adquiridas
-        # desenho de hexágono com bordas concêntricas de cores adquiridas
-        # desenho de hexágono com bordas concêntricas de cores adquiridas
-
+    # desenho de hexágono
     def desenha_mensagem(self, x, y, cores, rot=0.0, scale=0.7):
         """
         Desenha hexágono central menor e anéis concêntricos em torno, correspondendo às cores adquiridas.
@@ -350,7 +346,6 @@ class Renderer:
 # ============================================================ #
 
 
-# --------------- coloque antes da classe Application ---------------
 def reset_estado():
     global estadoAtual, progressoAnimacao, waypoint_idx
     global mensagem_x, mensagem_y, segment_start_x, segment_start_y
@@ -369,8 +364,6 @@ def reset_estado():
     mensagem_angulo = 0.0
     current_msg = ""
 
-
-# -------------------------------------------------------------------
 
 class Application:
     def __init__(self):
@@ -442,7 +435,7 @@ class Application:
             # -------------------------------------------------
             if progressoAnimacao >= 1.0:
                 progressoAnimacao = 0.0
-                current_msg = msg  # <-- OK, color existe aqui
+                current_msg = msg 
 
                 if color is not None:
                     acquired_colors.append(color)
@@ -497,10 +490,6 @@ class Application:
     def render(self):
         glClear(GL_COLOR_BUFFER_BIT)
 
-        # -----------------------------------------------------------------
-        # PCs de origem (esq) e destino (dir) — “acesos” apenas quando
-        # a camada correspondente está ativa
-        # -----------------------------------------------------------------
         ativo_esq = ESTADOS["APLICACAO"] <= estadoAtual <= ESTADOS["FISICA"]
         ativo_dir = ESTADOS["FISICA"] <= estadoAtual <= ESTADOS["DONE"]
 
@@ -508,9 +497,8 @@ class Application:
         self.renderer.desenha_pc(650, 300, 1.0, ativo_dir)
 
         # -----------------------------------------------------------------
-        # Mensagem / pacote
+
         # - encolhe de 1.0 → 0.5 apenas durante o movimento horizontal
-        #   (entre os dois computadores, na camada Física)
         # -----------------------------------------------------------------
         if estadoAtual in (
             ESTADOS["APLICACAO"], ESTADOS["TRANSPORTE"], ESTADOS["REDE"],
@@ -534,9 +522,8 @@ class Application:
                 scale=0.7 * scale_factor,
             )
 
-        # -----------------------------------------------------------------
-        # Mensagens de texto (legendas)
-        # -----------------------------------------------------------------
+        # Mensagens de texto
+
         if current_msg:
             self.renderer.escreve_texto(80, 550, current_msg)
         else:
@@ -568,7 +555,7 @@ class Application:
             reset_estado()
         elif key == glfw.KEY_ESCAPE:
             glfw.set_window_should_close(window, True)
-            global velocidadeAnimacao          # já existe no topo do arquivo
+            global velocidadeAnimacao        
 
         elif key == glfw.KEY_UP:
             velocidadeAnimacao = min(velocidadeAnimacao * 1.5, 0.02)   # acelera
@@ -586,7 +573,7 @@ def main():
     app = Application()
     try:
         if app.init():
-            app.run()  # run() já encerra o GLFW no finally
+            app.run() 
     except KeyboardInterrupt:
         print("\nInterrompido pelo usuário.")  # sai silenciosamente
     return 0
