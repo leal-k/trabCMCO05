@@ -554,6 +554,13 @@ class Application:
             reset_estado()
         elif key == glfw.KEY_ESCAPE:
             glfw.set_window_should_close(window, True)
+            global velocidadeAnimacao          # já existe no topo do arquivo
+
+        elif key == glfw.KEY_UP:
+            velocidadeAnimacao = min(velocidadeAnimacao * 1.5, 0.02)   # acelera
+        elif key == glfw.KEY_DOWN:
+            velocidadeAnimacao = max(velocidadeAnimacao / 1.5, 0.0005) # desacelera
+
 
 
 # ----------------------- Função main ----------------------- #
