@@ -504,7 +504,7 @@ class Application:
         # a camada correspondente está ativa
         # -----------------------------------------------------------------
         ativo_esq = ESTADOS["APLICACAO"] <= estadoAtual <= ESTADOS["FISICA"]
-        ativo_dir = estadoAtual != ESTADOS["IDLE"] and estadoAtual >= ESTADOS["MOVE"]
+        ativo_dir = ESTADOS["FISICA"] <= estadoAtual <= ESTADOS["DONE"]
 
         self.renderer.desenha_pc(150, 300, 1.0, ativo_esq)
         self.renderer.desenha_pc(650, 300, 1.0, ativo_dir)
